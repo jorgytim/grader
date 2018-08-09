@@ -194,9 +194,9 @@ elseif ($authChk -eq "false") {
 $Form1 = New-Object System.Windows.Forms.Form
 $Form1.ClientSize = New-Object System.Drawing.Size(500, 600)
 $Form1.Text = "$labName"
-$form1.topmost = $true
+$form1.topmost = $false
 $form1.StartPosition = "CenterScreen"
-$Form1.MinimizeBox = $False
+$Form1.MinimizeBox = $True
 $Form1.MaximizeBox = $False
 $form1.AutoSize = $false
 $form1.FormBorderStyle = "FixedDialog"
