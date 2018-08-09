@@ -4,6 +4,7 @@
     Changes:
     1.0 2015-06-02 - Initial script creation with winforms output
     1.1 2015-08-13 - Fine tuned grade submission and regmarker checks
+    1.2 2018-08-09 - General cleanup of functions, added minimize box to output window
 #>
 
 param(
@@ -19,7 +20,7 @@ param(
 
 #region functions
 
-function check-regmarkers {
+function read-regmarkers {
     #used by all labs, do not edit below
     param($inputString,$keyfile,$scriptDir,$labNum)
     #Decrypt strings with AES key
@@ -75,7 +76,7 @@ function out-score{
 	Write-Output "$pts/$outof`t$rubric`n"
 }
 
-function Grade-Lab {
+function Get-Labresults {
 	param(
         [string]$stuEmail,
         [string]$profEmail,
@@ -107,11 +108,11 @@ function Grade-Lab {
 	$smbmntpath1 = "//$($winsrv)/$($backupShare)/linux on /media/backup"
     $userpw = "Userpassw0rd"
     $groupsFldWin = "c:\shares\groups"
-	$now = (date).ToString("yyy-MM-dd")
+	$now = (get-date).ToString("yyy-MM-dd")
     
     # download supplemental files here
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$groupsFile" -quiet
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$usersFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$groupsFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$usersFile" -quiet
 
     #import users/groups files
     $users = Import-Csv $usersFile
@@ -147,7 +148,7 @@ function Grade-Lab {
     $lgnscore = 0
     $usrpoints = 0
 
-    $users | foreach {
+    $users | ForEach-Object {
         $usrName = $_.uname
 
         #check if user exists and has logged on, and if homedir setting exists
@@ -173,7 +174,7 @@ function Grade-Lab {
     $grpShareScore = 0
 
     #check membership of each group
-    $groups | foreach {
+    $groups | ForEach-Object {
         $groupName = $_.grpName
         $grpMembers = $_.members
         
@@ -212,7 +213,7 @@ function Grade-Lab {
     $linuxpoints = 0
     $linuxonline = Test-connection $linux -count 1 -quiet
 
-    $groups | foreach {
+    $groups | foreach-object {
         $groupName = $_.grpName
         $grpMembers = $_.members
         $groupShare = "$($groupName)-projects"
@@ -245,9 +246,9 @@ $labNum = "Lab07"
 #endregion global constants
 
 #region main, used by all labs, do not edit below
-cls
+clear-host
 $scriptDir = $env:TEMP
-[string]$scriptsBaseUrl = "https://tajorgen.mysite.syr.edu"
+[string]$scriptsIncludesBaseUrl = "https://raw.githubusercontent.com/jorgytim/grader/master/346includes"
 Import-Module activedirectory -ErrorAction SilentlyContinue
 Import-Module "$($scriptDir)\$($moduleFile)"
 Install-AdditionalModules
@@ -257,10 +258,10 @@ $global:regOutput = $null
 [string]$global:vmOwner = $null
 [string]$global:runCount = $null
 
-$authChk = check-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
+$authChk = read-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
 
 if ($authChk -eq "true"){
-    $Output += Grade-Lab -stuEmail $stuEmail -profEmail $profEmail -labName $labName
+    $Output += Get-Labresults -stuEmail $stuEmail -profEmail $profEmail -labName $labName
     [string]$GradeResults = [string]::join("`r`n", ($output))
 }
 elseif ($authChk -eq "false") {

@@ -4,6 +4,7 @@
     Changes:
     1.0 2015-06-02 - Initial script creation with winforms output
     1.1 2015-08-13 - Fine tuned grade submission and regmarker checks
+    1.2 2018-08-09 - General cleanup of functions, added minimize box to output window
 #>
 
 param(
@@ -19,7 +20,7 @@ param(
 
 #region functions
 
-function check-regmarkers {
+function Read-regmarkers {
     #used by all labs, do not edit below
     param($inputString,$keyfile,$scriptDir,$labNum)
     #Decrypt strings with AES key
@@ -75,7 +76,7 @@ function out-score{
 	Write-Output "$pts/$outof`t$rubric`n"
 }
 
-function Grade-Lab {
+function Get-Labresults {
 	param(
         [string]$stuEmail,
         [string]$profEmail,
@@ -109,7 +110,7 @@ function Grade-Lab {
 	$sentmsgtxt = "Delivered Message From"
     $itsentaddr = "it@mail.ad.fauxco.com"
     $hrsentaddr = "hr@mail.ad.fauxco.com"
-	$now = (date).ToString("yyy-MM-dd")
+	$now = (get-date).ToString("yyy-MM-dd")
     
     #lab grading output
 	write-output "Score`tRubric (what's being checked)`n"
@@ -177,9 +178,9 @@ $labNum = "Lab08"
 #endregion global constants
 
 #region main, used by all labs, do not edit below
-cls
+clear-host
 $scriptDir = $env:TEMP
-[string]$scriptsBaseUrl = "https://tajorgen.mysite.syr.edu"
+#[string]$scriptsBaseUrl = "https://raw.githubusercontent.com/jorgytim/grader/master"
 Import-Module activedirectory -ErrorAction SilentlyContinue
 Import-Module "$($scriptDir)\$($moduleFile)"
 Install-AdditionalModules
@@ -189,10 +190,10 @@ $global:regOutput = $null
 [string]$global:vmOwner = $null
 [string]$global:runCount = $null
 
-$authChk = check-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
+$authChk = read-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
 
 if ($authChk -eq "true"){
-    $Output += Grade-Lab -stuEmail $stuEmail -profEmail $profEmail -labName $labName
+    $Output += Get-Labresults -stuEmail $stuEmail -profEmail $profEmail -labName $labName
     [string]$GradeResults = [string]::join("`r`n", ($output))
 }
 elseif ($authChk -eq "false") {

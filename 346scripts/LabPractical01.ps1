@@ -4,6 +4,7 @@
     Changes:
     1.0 2015-06-02 - Initial script creation with winforms output
     1.1 2015-08-13 - Fine tuned grade submission and regmarker checks
+    1.2 2018-08-09 - General cleanup of functions, added minimize box to output window
 #>
 
 param(
@@ -19,7 +20,7 @@ param(
 
 #region functions
 
-function check-regmarkers {
+function read-regmarkers {
     #used by all labs, do not edit below
     param($inputString,$keyfile,$scriptDir,$labNum)
     #Decrypt strings with AES key
@@ -75,7 +76,7 @@ function out-score{
 	Write-Output "$pts/$outof`t$rubric`n"
 }
 
-function Grade-Lab {
+function Get-Labresults {
 	param(
         [string]$stuEmail,
         [string]$profEmail,
@@ -95,12 +96,12 @@ function Grade-Lab {
     $share1 = "shares"
     $groupsFile = "lp01-groups.csv"
     $usersFile = "lp01-users.csv"
-	$now = (date).ToString("yyy-MM-dd")
+	$now = (get-date).ToString("yyy-MM-dd")
     
     # download supplemental files here
     #Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "plink.exe" -quiet
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$groupsFile" -quiet
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$usersFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$groupsFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$usersFile" -quiet
     
     #create plink command file
     if (-not (test-path -path ".\cmd.txt")) 
@@ -129,7 +130,7 @@ function Grade-Lab {
     $lgnscore = 0
     
     $users = Import-Csv $usersFile
-    $users | foreach {
+    $users | foreach-object {
         $usrName = $_.uname
 
         #check if users exist
@@ -165,7 +166,7 @@ function Grade-Lab {
     $grpmbrscore = 0
     
     $groups = Import-Csv $groupsFile
-    $groups | foreach {
+    $groups | foreach-object {
         $groupName = $_.grpName
         $grpMembers = $_.members
 
@@ -199,7 +200,7 @@ function Grade-Lab {
 
     #import users list, check each
     $users = Import-Csv $usersFile
-    $users | foreach {
+    $users | foreach-object {
         $usrName = $_.uname
         $lusr = Test-LinuxUserExists -adminuser $nixadmin -rootpw $nixpw -lhost $linux -user $usrName -points 2
         out-score "Linux user exists [$usrName]?" $lusr 2
@@ -244,9 +245,9 @@ $labNum = "LP01"
 #endregion global constants
 
 #region main, used by all labs, do not edit below
-cls
+Clear-Host
 $scriptDir = $env:TEMP
-[string]$scriptsBaseUrl = "https://tajorgen.mysite.syr.edu"
+[string]$scriptsIncludesBaseUrl = "https://raw.githubusercontent.com/jorgytim/grader/master/346includes"
 Import-Module activedirectory -ErrorAction SilentlyContinue
 Import-Module "$($scriptDir)\$($moduleFile)"
 Install-AdditionalModules
@@ -256,10 +257,10 @@ $global:regOutput = $null
 [string]$global:vmOwner = $null
 [string]$global:runCount = $null
 
-$authChk = check-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
+$authChk = read-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
 
 if ($authChk -eq "true"){
-    $Output += Grade-Lab -stuEmail $stuEmail -profEmail $profEmail -labName $labName
+    $Output += Get-Labresults -stuEmail $stuEmail -profEmail $profEmail -labName $labName
     [string]$GradeResults = [string]::join("`r`n", ($output))
 }
 elseif ($authChk -eq "false") {
@@ -283,9 +284,9 @@ elseif ($authChk -eq "false") {
 $Form1 = New-Object System.Windows.Forms.Form
 $Form1.ClientSize = New-Object System.Drawing.Size(500, 600)
 $Form1.Text = "$labName"
-$form1.topmost = $true
+$form1.topmost = $false
 $form1.StartPosition = "CenterScreen"
-$Form1.MinimizeBox = $False
+$Form1.MinimizeBox = $True
 $Form1.MaximizeBox = $False
 $form1.AutoSize = $false
 $form1.FormBorderStyle = "FixedDialog"

@@ -4,6 +4,7 @@
     Changes:
     1.0 2015-06-02 - Initial script creation with winforms output
     1.1 2015-08-13 - Fine tuned grade submission and regmarker checks
+    1.2 2018-08-09 - General cleanup of functions, added minimize box to output window
 #>
 
 param(
@@ -19,7 +20,7 @@ param(
 
 #region functions
 
-function check-regmarkers {
+function read-regmarkers {
     #used by all labs, do not edit below
     param($inputString,$keyfile,$scriptDir,$labNum)
     #Decrypt strings with AES key
@@ -75,7 +76,7 @@ function out-score{
 	Write-Output "$pts/$outof`t$rubric`n"
 }
 
-function Grade-Lab {
+function Get-Labresults {
 	param(
         [string]$stuEmail,
         [string]$profEmail,
@@ -113,11 +114,11 @@ function Grade-Lab {
     $share1 = "homes"
     $groupsFile = "lp02-groups.csv"
     $usersFile = "lp02-users.csv"
-	$now = (date).ToString("yyy-MM-dd")
+	$now = (get-date).ToString("yyy-MM-dd")
 
     # download supplemental files here
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$groupsFile" -quiet
-    Get-SupplemantalFile -url "$scriptsBaseUrl" -filename "$usersFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$groupsFile" -quiet
+    Get-SupplemantalFile -url "$scriptsIncludesBaseUrl" -filename "$usersFile" -quiet
     
     #import csv files
     $users = Import-Csv $usersFile
@@ -158,7 +159,7 @@ function Grade-Lab {
 	$userscore = 0
 	$hdelgnscore = 0
     
-    $users | foreach {
+    $users | ForEach-Object {
         $hd = 0
         $usrName = $_.uname
 
@@ -185,7 +186,7 @@ function Grade-Lab {
 	$grpShareScore = 0
 	$gfpscore = 0
 	
-    $groups | foreach {
+    $groups | ForEach-Object {
         $groupName = $_.grpName
         $grpMembers = $_.members
         
@@ -233,7 +234,7 @@ function Grade-Lab {
     #find postoffice folder first to determine mailfolders path
     $mailfolders = (get-childitem "$($mailEnableRootFld)\PostOffices\" -Directory).FullName + "\MAILROOT"
 
-    $users | foreach {
+    $users | foreach-object {
         $usrName = $_.uname
 		
 		#check if emails were sent and received by each user
@@ -267,7 +268,7 @@ function Grade-Lab {
 	
 	$blogsvcscore = $blogsvc1 + $blogsvc2 + $blogsvc3
 	
-    $users | foreach {
+    $users | ForEach-Object {
         $usrName = $_.uname
         $lastName = $_.lname
 		
@@ -296,7 +297,7 @@ function Grade-Lab {
     out-score "Homedir setting correct for [$username]?" $IThde 1
 
     #detect if IT is a member of all groups
-    $groups | foreach {
+    $groups | ForEach-Object {
         $groupName = $_.grpName
         $grpMembers = $_.members
         $ITgrpsTmp = Test-MemberofGroup -account $username -group $groupname -points 1
@@ -347,9 +348,9 @@ $labNum = "LP02"
 #endregion global constants
 
 #region main, used by all labs, do not edit below
-cls
+Clear-Host
 $scriptDir = $env:TEMP
-[string]$scriptsBaseUrl = "https://tajorgen.mysite.syr.edu"
+[string]$scriptsIncludesBaseUrl = "https://raw.githubusercontent.com/jorgytim/grader/master/346includes"
 Import-Module activedirectory -ErrorAction SilentlyContinue
 Import-Module "$($scriptDir)\$($moduleFile)"
 Install-AdditionalModules
@@ -359,10 +360,10 @@ $global:regOutput = $null
 [string]$global:vmOwner = $null
 [string]$global:runCount = $null
 
-$authChk = check-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
+$authChk = Read-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
 
 if ($authChk -eq "true"){
-    $Output += Grade-Lab -stuEmail $stuEmail -profEmail $profEmail -labName $labName
+    $Output += Get-Labresults -stuEmail $stuEmail -profEmail $profEmail -labName $labName
     [string]$GradeResults = [string]::join("`r`n", ($output))
 }
 elseif ($authChk -eq "false") {
@@ -386,9 +387,9 @@ elseif ($authChk -eq "false") {
 $Form1 = New-Object System.Windows.Forms.Form
 $Form1.ClientSize = New-Object System.Drawing.Size(500, 600)
 $Form1.Text = "$labName"
-$form1.topmost = $true
+$form1.topmost = $false
 $form1.StartPosition = "CenterScreen"
-$Form1.MinimizeBox = $False
+$Form1.MinimizeBox = $True
 $Form1.MaximizeBox = $False
 $form1.AutoSize = $false
 $form1.FormBorderStyle = "FixedDialog"

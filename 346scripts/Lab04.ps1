@@ -5,6 +5,7 @@
     1.0 2015-06-02 - Initial script creation with winforms output
     1.1 2015-08-13 - Fine tuned grade submission and regmarker checks
     1.2 2015-10-01 - Edited lab grading function to tweak file share checks
+    1.3 2018-08-09 - General cleanup of functions, added minimize box to output window
 #>
 
 param(
@@ -20,7 +21,7 @@ param(
 
 #region functions
 
-function check-regmarkers {
+function read-regmarkers {
     #used by all labs, do not edit below
     param($inputString,$keyfile,$scriptDir,$labNum)
     #Decrypt strings with AES key
@@ -77,7 +78,7 @@ function out-score{
 	Write-Output "$pts/$outof`t$rubric`n"
 }
 
-function Grade-Lab {
+function Get-Labresults {
 	param(
         [string]$stuEmail,
         [string]$profEmail,
@@ -102,7 +103,7 @@ function Grade-Lab {
 	$file = "message.txt"
     $usr = "testuser"
     $upass = "Userpassw0rd!"
-	$now = (date).ToString("yyy-MM-dd")
+	$now = (get-date).ToString("yyy-MM-dd")
     
     #lab grading output
 	write-output ""
@@ -147,9 +148,9 @@ $labNum = "Lab04"
 #endregion global constants
 
 #region main, used by all labs, do not edit below
-cls
+Clear-Host
 $scriptDir = $env:TEMP
-[string]$scriptsBaseUrl = "http://tajorgen.mysite.syr.edu"
+#[string]$scriptsBaseUrl = "https://raw.githubusercontent.com/jorgytim/grader/master"
 Import-Module activedirectory -ErrorAction SilentlyContinue
 Import-Module "$($scriptDir)\$($moduleFile)"
 $Output = New-Object System.Collections.ArrayList
@@ -158,10 +159,10 @@ $global:regOutput = $null
 [string]$global:vmOwner = $null
 [string]$global:runCount = $null
 
-$authChk = check-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
+$authChk = read-regmarkers -inputString $stuEmail -keyfile $keyFile -scriptDir $scriptDir -labNum $labNum
 
 if ($authChk -eq "true"){
-    $Output += Grade-Lab -stuEmail $stuEmail -profEmail $profEmail -labName $labName
+    $Output += Get-Labresults -stuEmail $stuEmail -profEmail $profEmail -labName $labName
     [string]$GradeResults = [string]::join("`r`n", ($output))
 }
 elseif ($authChk -eq "false") {
@@ -185,9 +186,9 @@ elseif ($authChk -eq "false") {
 $Form1 = New-Object System.Windows.Forms.Form
 $Form1.ClientSize = New-Object System.Drawing.Size(500, 600)
 $Form1.Text = "$labName"
-$form1.topmost = $true
+$form1.topmost = $false
 $form1.StartPosition = "CenterScreen"
-$Form1.MinimizeBox = $False
+$Form1.MinimizeBox = $True
 $Form1.MaximizeBox = $False
 $form1.AutoSize = $false
 $form1.FormBorderStyle = "FixedDialog"

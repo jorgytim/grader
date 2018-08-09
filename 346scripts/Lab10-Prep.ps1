@@ -1,8 +1,15 @@
-﻿#lab10 prep script
+﻿<# lab10 prep script
+    Purpose: IST346 lab 10 preparation script
+    AUTHOR:  tajorgen
+    Changes:
+    1.0 2018-08-09 - General cleanup of functions, added minimize box to output window
+#>
+
+
 $ErrorActionPreference = 'silentlycontinue'
 import-module activedirectory
 
-function lab-prep {
+function Invoke-labprep {
     param()
     #constants
 	$domain = "ad.fauxco.com"
@@ -20,7 +27,7 @@ function lab-prep {
     $homepath2 = "c:\shares\homes\adente"
     $regKey = "HKLM:\SOFTWARE\IST346\lab10marker"
     
-    $now = (date).ToString("yyy-MM-dd")
+    $now = (get-date).ToString("yyy-MM-dd")
 
     write-host "Preparing lab environment...."
     write-host " "
@@ -35,7 +42,7 @@ function lab-prep {
     Clear-DnsClientCache
 
     #alter memberships
-    get-adgroupmember $group1 | foreach{Remove-ADGroupMember $group1 -members $_.samaccountname -confirm:$false} | out-null
+    get-adgroupmember $group1 | ForEach-Object {Remove-ADGroupMember $group1 -members $_.samaccountname -confirm:$false} | out-null
 
     #alter user settings
     set-aduser $user1 -HomeDirectory $null | out-null
@@ -46,7 +53,7 @@ function lab-prep {
 
     #alter folder permissions
     $acl = get-acl $homepath2
-    $acl.access | %{$acl.removeaccessrule($_)}
+    $acl.access | foreach-object {$acl.removeaccessrule($_)}
     set-acl $homepath2 $acl
  
     New-Item -Path HKLM:\SOFTWARE\IST346 -ErrorAction SilentlyContinue
@@ -63,7 +70,7 @@ function lab-prep {
 #check which host this is being run on
 #if ("$($env:computername).$($env:userdnsdomain)" -eq "$($winsrv)"){
 
-    cls
+    clear-host
 
     Write-host "This is the preparation script for IST346 Lab10.  Only run this script in the beginning of Lab10!" -ForegroundColor Yellow
     write-host "This script WILL alter your VMs and break some functionality!" -ForegroundColor Yellow
@@ -76,7 +83,7 @@ function lab-prep {
         $yn = Read-Host "Are you absolutely sure you want to run this? [y,n]?"
         if ($yn -eq"y")
         {
-		    lab-prep
+		    Invoke-labprep
         }
 
         if ($yn -eq"n")
