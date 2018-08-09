@@ -34,6 +34,9 @@ function Test-Url {
    
     try
     {
+        #Set powershell to TLS1.2 for SSL encryption
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        
         # Create a request object to "ping" the URL
         $request = [System.Net.WebRequest]::Create($url)
         $request.Timeout = 1000
@@ -72,7 +75,8 @@ function Get-SupplemantalFile {
             write-host "Exiting grading script." -ForegroundColor Yellow
             exit 1
         }
-
+        #Set powershell to TLS1.2 for SSL encryption
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         Start-BitsTransfer -Source $filesource
     }
     #else {write-host "$filename already exists, no supplentary files to download"}
